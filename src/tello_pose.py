@@ -14,14 +14,16 @@ camera_matrix = np.loadtxt(calib_path + 'cameraMatrix.txt', delimiter = ',')
 camera_distortion = np.loadtxt(calib_path + 'cameraDistortion.txt', delimiter = ',')
 R_flip = np.zeros((3, 3), dtype = np.float32)
 R_flip[0, 0] = 1
-R_flip[1, 1] = -1
-R_flip[2, 2] = -1
+R_flip[1, 2] = -1
+R_flip[2, 1] = 1
 font = cv2.FONT_HERSHEY_PLAIN
 
 aruco_dict = aruco.Dictionary_get(aruco.DICT_4X4_100)
 parameters = aruco.DetectorParameters_create()
 board_ids = np.array([[0]], dtype = np.int32)
-board_corners = [np.array([[0.0, 2.0, 1.5], [0.0, 2.0, 1.6], [0.1, 2.0, 1.6], [0.1, 2.0, 1.5]], dtype = np.float32)] # clockwise, beginning from the bottom-left corner
+# board_corners = [np.array([[0.0, 2.0, 1.5], [0.0, 2.0, 1.6], [0.1, 2.0, 1.6], [0.1, 2.0, 1.5]], dtype = np.float32)] # clockwise, beginning from the bottom-left corner
+# board_corners = [np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 0.1], [0.1, 0.0, 0.1], [0.1, 0.0, 0.0]], dtype = np.float32)] # clockwise, beginning from the bottom-left corner
+board_corners = [np.array([[0.0, 0.0, 0.1], [0.1, 0.0, 0.1], [0.1, 0.0, 0.0], [0.0, 0.0, 0.0]], dtype = np.float32)] # clockwise, beginning from the bottom-left corner
 board = aruco.Board_create(board_corners, aruco_dict, board_ids)
 
 pub_x = rospy.Publisher("/x", Float32, queue_size=10)
@@ -68,24 +70,26 @@ def convert_color_image(ros_image):
 
         if len(corners) > 0:
             
-            retval, rvec, tvec = aruco.estimatePosesBoard(corners, ids, board, camera_matrix, camera_distortion)
-
+            retval, rvec, tvec = aruco.estimatePoseBoard(corners, ids, board, camera_matrix, camera_distortion, None, None)
+            print(rvec)
+            print(tvec)
             # ret = aruco.estimatePoseSingleMarkers(corners, marker_size, camera_matrix, camera_distortion)
             # rvec, tvec = ret[0][0, 0, :], ret[1][0, 0, :]
 
-            # aruco.drawAxis(color_image, camera_matrix, camera_distortion, rvec, tvec, 10)
+            aruco.drawAxis(color_image, camera_matrix, camera_distortion, rvec, tvec, 0.1)
 
             R_ct = np.matrix(cv2.Rodrigues(rvec)[0])
             R_tc = R_ct.T
 
-            pos_camera = -R_tc * np.matrix(tvec).T
+            pos_camera = -R_tc * np.matrix(tvec)
 
+            # roll_camera, pitch_camera, yaw_camera = rotationMatrixToEulerAngles(R_tc)
             roll_camera, pitch_camera, yaw_camera = rotationMatrixToEulerAngles(R_flip * R_tc)
             roll_camera = math.degrees(roll_camera)
             pitch_camera = math.degrees(pitch_camera)
             yaw_camera = math.degrees(yaw_camera)
 
-            str_position = "CAMERA Position x=%4.0f y=%4.0f z=%4.0f"%(pos_camera[0], pos_camera[1], pos_camera[2])
+            str_position = "CAMERA Position x=%4.0f y=%4.0f z=%4.0f"%(pos_camera[0]*100, pos_camera[1]*100, pos_camera[2]*100)
             str_attitude = "CAMERA Attitude r=%4.0f p=%4.0f y=%4.0f"%(roll_camera, pitch_camera, yaw_camera)
             cv2.putText(color_image, str_position, (0, 200), font, 1, (0, 255, 0), 2, cv2.LINE_AA)
             cv2.putText(color_image, str_attitude, (0, 250), font, 1, (0, 255, 0), 2, cv2.LINE_AA)
