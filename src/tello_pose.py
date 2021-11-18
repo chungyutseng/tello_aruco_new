@@ -18,6 +18,12 @@ R_flip[1, 1] = -1
 R_flip[2, 2] = -1
 font = cv2.FONT_HERSHEY_PLAIN
 
+aruco_dict = aruco.Dictionary_get(aruco.DICT_4X4_100)
+parameters = aruco.DetectorParameters_create()
+board_ids = np.array([[0]], dtype = np.int32)
+board_corners = [np.array([[0.0, 2.0, 1.5], [0.0, 2.0, 1.6], [0.1, 2.0, 1.6], [0.1, 2.0, 1.5]], dtype = np.float32)] # clockwise, beginning from the bottom-left corner
+board = aruco.Board_create(board_corners, aruco_dict, board_ids)
+
 pub_x = rospy.Publisher("/x", Float32, queue_size=10)
 pub_y = rospy.Publisher("/y", Float32, queue_size=10)
 pub_z = rospy.Publisher("/z", Float32, queue_size=10)
@@ -56,15 +62,18 @@ def convert_color_image(ros_image):
     try:
         color_image = bridge.imgmsg_to_cv2(ros_image, "bgr8")
         gray_image = cv2.cvtColor(color_image, cv2.COLOR_BGR2GRAY)
-        aruco_dict = aruco.Dictionary_get(aruco.DICT_4X4_100)
-        parameters = aruco.DetectorParameters_create()
+        # aruco_dict = aruco.Dictionary_get(aruco.DICT_4X4_100)
+        # parameters = aruco.DetectorParameters_create()
         corners, ids, rejected = aruco.detectMarkers(gray_image, aruco_dict, parameters = parameters)
 
         if len(corners) > 0:
-            ret = aruco.estimatePoseSingleMarkers(corners, marker_size, camera_matrix, camera_distortion)
-            rvec, tvec = ret[0][0, 0, :], ret[1][0, 0, :]
+            
+            retval, rvec, tvec = aruco.estimatePosesBoard(corners, ids, board, camera_matrix, camera_distortion)
 
-            aruco.drawAxis(color_image, camera_matrix, camera_distortion, rvec, tvec, 10)
+            # ret = aruco.estimatePoseSingleMarkers(corners, marker_size, camera_matrix, camera_distortion)
+            # rvec, tvec = ret[0][0, 0, :], ret[1][0, 0, :]
+
+            # aruco.drawAxis(color_image, camera_matrix, camera_distortion, rvec, tvec, 10)
 
             R_ct = np.matrix(cv2.Rodrigues(rvec)[0])
             R_tc = R_ct.T
