@@ -21,8 +21,6 @@ font = cv2.FONT_HERSHEY_PLAIN
 aruco_dict = aruco.Dictionary_get(aruco.DICT_4X4_100)
 parameters = aruco.DetectorParameters_create()
 board_ids = np.array([[0]], dtype = np.int32)
-# board_corners = [np.array([[0.0, 2.0, 1.5], [0.0, 2.0, 1.6], [0.1, 2.0, 1.6], [0.1, 2.0, 1.5]], dtype = np.float32)] # clockwise, beginning from the bottom-left corner
-# board_corners = [np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 0.1], [0.1, 0.0, 0.1], [0.1, 0.0, 0.0]], dtype = np.float32)] # clockwise, beginning from the bottom-left corner
 board_corners = [np.array([[0.0, 0.0, 0.1], [0.1, 0.0, 0.1], [0.1, 0.0, 0.0], [0.0, 0.0, 0.0]], dtype = np.float32)] # clockwise, beginning from the bottom-left corner
 board = aruco.Board_create(board_corners, aruco_dict, board_ids)
 
@@ -84,13 +82,16 @@ def convert_color_image(ros_image):
             pos_camera = -R_tc * np.matrix(tvec)
 
             # roll_camera, pitch_camera, yaw_camera = rotationMatrixToEulerAngles(R_tc)
+            # roll_camera, pitch_camera, yaw_camera = rotationMatrixToEulerAngles(R_flip * R_tc)
+
             roll_camera, pitch_camera, yaw_camera = rotationMatrixToEulerAngles(R_flip * R_tc)
+            
             roll_camera = math.degrees(roll_camera)
             pitch_camera = math.degrees(pitch_camera)
             yaw_camera = math.degrees(yaw_camera)
 
             str_position = "CAMERA Position x=%4.0f y=%4.0f z=%4.0f"%(pos_camera[0]*100, pos_camera[1]*100, pos_camera[2]*100)
-            str_attitude = "CAMERA Attitude r=%4.0f p=%4.0f y=%4.0f"%(roll_camera, pitch_camera, yaw_camera)
+            str_attitude = "CAMERA Attitude roll=%4.0f pitch=%4.0f yaw=%4.0f"%(roll_camera, pitch_camera, yaw_camera)
             cv2.putText(color_image, str_position, (0, 200), font, 1, (0, 255, 0), 2, cv2.LINE_AA)
             cv2.putText(color_image, str_attitude, (0, 250), font, 1, (0, 255, 0), 2, cv2.LINE_AA)
 
