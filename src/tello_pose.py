@@ -41,6 +41,12 @@ def isRotationMatrix(R):
 def rotationMatrixToEulerAngles(R):
     assert(isRotationMatrix(R))
 
+    '''
+    x: roll
+    y: pitch
+    z: yaw
+    '''
+
     sy = math.sqrt(R[0, 0] * R[0, 0] + R[1, 0] * R[1, 0])
 
     singular = sy < 1e-6
@@ -62,8 +68,6 @@ def convert_color_image(ros_image):
     try:
         color_image = bridge.imgmsg_to_cv2(ros_image, "bgr8")
         gray_image = cv2.cvtColor(color_image, cv2.COLOR_BGR2GRAY)
-        # aruco_dict = aruco.Dictionary_get(aruco.DICT_4X4_100)
-        # parameters = aruco.DetectorParameters_create()
         corners, ids, rejected = aruco.detectMarkers(gray_image, aruco_dict, parameters = parameters)
 
         if len(corners) > 0:
@@ -71,8 +75,6 @@ def convert_color_image(ros_image):
             retval, rvec, tvec = aruco.estimatePoseBoard(corners, ids, board, camera_matrix, camera_distortion, None, None)
             print(rvec)
             print(tvec)
-            # ret = aruco.estimatePoseSingleMarkers(corners, marker_size, camera_matrix, camera_distortion)
-            # rvec, tvec = ret[0][0, 0, :], ret[1][0, 0, :]
 
             aruco.drawAxis(color_image, camera_matrix, camera_distortion, rvec, tvec, 0.1)
 
@@ -80,9 +82,6 @@ def convert_color_image(ros_image):
             R_tc = R_ct.T
 
             pos_camera = -R_tc * np.matrix(tvec)
-
-            # roll_camera, pitch_camera, yaw_camera = rotationMatrixToEulerAngles(R_tc)
-            # roll_camera, pitch_camera, yaw_camera = rotationMatrixToEulerAngles(R_flip * R_tc)
 
             roll_camera, pitch_camera, yaw_camera = rotationMatrixToEulerAngles(R_flip * R_tc)
             
